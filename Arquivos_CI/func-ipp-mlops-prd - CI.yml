@@ -1,0 +1,61 @@
+name: $(date:yyyyMMdd)$(rev:.r)
+jobs:
+- job: Phase_1
+  displayName: Agent job 1
+  timeoutInMinutes: 0
+  pool:
+    vmImage: ubuntu-latest
+  steps:
+  - checkout: self
+    clean: False
+  - task: UsePythonVersion@0
+    displayName: Use Python 3.9
+    inputs:
+      versionSpec: 3.9
+  - task: CmdLine@2
+    displayName: Run Unit Tests
+    inputs:
+      script: >-
+        pip install --upgrade pip
+
+        pip install -r Application/requirements.txt
+
+        pip install pytest
+
+        pytest Tests --junitxml=TestResults/test-results.xml
+
+        pip install install-jdk
+  - task: PublishTestResults@2
+    displayName: Publish Test Results **/test-*.xml
+    inputs:
+      testResultsFiles: '**/test-*.xml'
+  - task: CmdLine@2
+    displayName: Install dependencies
+    inputs:
+      script: >-
+        pip install --upgrade pip
+
+        pip install --target="./.python_packages/lib/site-packages" -r ./requirements.txt
+
+        pip install install-jdk
+      workingDirectory: $(System.DefaultWorkingDirectory)/Application
+  - task: ArchiveFiles@2
+    displayName: Archive files
+    inputs:
+      rootFolderOrFile: $(System.DefaultWorkingDirectory)/Application
+      includeRootFolder: false
+      verbose: true
+  - task: CopyFiles@2
+    displayName: Copy ARM Template
+    inputs:
+      SourceFolder: ArmTemplates
+      TargetFolder: $(Build.ArtifactStagingDirectory)
+      flattenFolders: true
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact: drop'
+    enabled: False
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact: afaprd'
+    inputs:
+      ArtifactName: afaprd
+...
