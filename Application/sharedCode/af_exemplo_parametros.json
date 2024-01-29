@@ -9,16 +9,16 @@
 		{
 			"Name": "exemplo_source_componente",
 			"FileSystem":"data",
-			"Directory": "raw/dados_internos/bi/dw/dm_componente",
-			"FileName": "rw_dm_componente.parquet"
+			"Directory": "",
+			"FileName": ""
 		}
 	],
 	"DatasetTarget": [
 		{
 			"Name": "exemplo_target_componente",
 			"FileSystem":"data",
-			"Directory": "raw/dados_internos/bi/dw/dm_componente",
-			"FileName": "rw_dm_componente.parquet"
+			"Directory": "",
+			"FileName": ""
 		}
 		
 		
