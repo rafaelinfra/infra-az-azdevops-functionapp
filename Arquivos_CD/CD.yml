@@ -1,0 +1,17 @@
+name: $(date:yyyyMMdd)$(rev:.r)
+jobs:
+- job: Phase_1
+  displayName: Agent job 1
+  timeoutInMinutes: 0
+  pool:
+    vmImage: ubuntu-latest
+  steps:
+  - checkout: self
+    clean: False
+- task: AzureFunctionApp@2
+  displayName: 'Azure Function App Deploy'
+  inputs:
+    connectedServiceNameARM: '<ServiceConnect>'
+    appType: functionAppLinux
+    appName: '<functionappname>'
+    runtimeStack: 'PYTHON|3.9'
