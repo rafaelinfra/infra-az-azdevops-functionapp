@@ -1,0 +1,20 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "STORAGE_ACCOUNT_NAME": "stippdatalakelab",
+    "STORAGE_ACCOUNT_NAME_LGPD": "stippdatalakelgpdlab",
+    "KEY_VAULT_URL": "https://kv-ippdatalake-lab.vault.azure.net/",
+    "KEY_VAULT_URL_BDC": "https://kv-ippdatalake-dev.vault.azure.net",
+    "WEBSITE_TIME_ZONE": "E. South America Standard Time",
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_EXTENSION_VERSION": "~4",
+    "WEBSITE_ENABLE_SYNC_UPDATE_SITE": "false",
+    "WEBSITE_NODE_DEFAULT_VERSION": "8.11.1",
+    "WEBSITE_USE_ZIP": "0",
+    "WEBSITE_RUN_FROM_PACKAGE": "0",
+    "FULL_ENRICHMENT_YEAR": "2020",
+    "PARTIAL_ENRICHMENT_YEAR": "2021",
+    "AzureWebJobs.Function1.Disabled": "true"
+  }
+}

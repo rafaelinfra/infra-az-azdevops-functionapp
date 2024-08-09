@@ -3,7 +3,7 @@ import sys
 import os
 import unittest
 
-app_dir_path = os.path.join(os.getcwd(), 'Application/Function1')
+app_dir_path = os.path.join(os.getcwd(), 'Applications/Function1')
 sys.path.append(app_dir_path)
 import __init__
 

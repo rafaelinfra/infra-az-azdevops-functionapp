@@ -2,10 +2,11 @@ import logging
 import pandas as pd
 import json
 import os
-from io import BytesIO, StringIO
+from io import BytesIO
 from azure.storage.filedatalake import DataLakeServiceClient
 from azure.identity import DefaultAzureCredential
 from azure.keyvault.secrets import SecretClient
+import base64
 
 
 # método responsável por inicializar a conexão com azure gen2
@@ -23,22 +24,6 @@ def initialize_storage_account_ad():
     except Exception as e:
         logging.error(e)
         raise Exception('Erro ao efetuar autenticação com o Azure:', e)
-
-#método responsável por inicializar a conexão com o azure gen2 alternativo
-# o azure gen2 alternativo utiliza a variável STORAGE_ACCOUNT_NAME_DEV
-def initialize_storage_account_ad_dev():
-    try:
-        # criação da variável service_client_dev, pois estará associada a um storage alternativo
-        global service_client_dev
-        credential = DefaultAzureCredential()
-        service_client_dev = DataLakeServiceClient(
-            account_url="{}://{}.dfs.core.windows.net".format(
-                "https", os.environ['STORAGE_ACCOUNT_NAME_DEV']),
-            credential=credential)
-
-    except Exception as e:
-        logging.error(e)
-        raise Exception('Erro ao efetuar autenticação com o Azure no storage alternativo:', e)
 
 
 def upload_file_to_directory_bulk(fs_name,
@@ -58,25 +43,6 @@ def upload_file_to_directory_bulk(fs_name,
         logging.error(e)
         raise Exception('Erro ao salvar arquivo no datalake: ', e)
 
-# Método voltado para salvar dados no formato .csv 
-def upload_file_to_directory_bulk2(fs_name,
-                                  file_path,
-                                  file_name,
-                                  df: pd.DataFrame):
-    initialize_storage_account_ad()
-    try:
-        file_system_client = service_client.get_file_system_client(
-            file_system=fs_name)
-        directory_client = file_system_client.get_directory_client(file_path)
-        file_client = directory_client.get_file_client(file_name)
-        buffer = StringIO()
-        df.to_csv(buffer, sep=';', encoding='ANSI', index=False)
-        buffer.seek(0)
-        file_client.upload_data(buffer.getvalue(), overwrite=True)
-    except Exception as e:
-        logging.error(e)
-        raise Exception('Erro ao salvar arquivo no datalake: ', e)
-
 
 def download_file_from_directory(fs_name, file_path, file_name):
     try:
@@ -90,21 +56,29 @@ def download_file_from_directory(fs_name, file_path, file_name):
     except Exception as e:
         logging.error(e)
         raise Exception(e)
-    
-# Método similar ao método anterior, mas focado em uso de storage alternativo
-def download_file_from_directory_dev(fs_name, file_path, file_name):
+
+def get_gcp_credentials():
     try:
-        file_system_client = service_client_dev.get_file_system_client(
-            file_system=fs_name)
-        directory_client = file_system_client.get_directory_client(file_path)
-        file_client = directory_client.get_file_client(file_name)
-        download = file_client.download_file()
-        downloaded_bytes = download.readall()
-        return downloaded_bytes
+        key_vault = SecretClient(
+            vault_url= os.environ['KEY_VAULT_URL'],
+            credential=DefaultAzureCredential()
+        )
+
+        private_key = key_vault.get_secret(name='sct-gcp-jornada-consumidor')
+        decoded_private_key = base64.b64decode(private_key.value).decode("utf-8")
+
+        client_email = key_vault.get_secret(name='usu-gcp-jornada-consumidor')
+
+        credentials = {
+                        "private_key": decoded_private_key,
+                        "client_email": client_email.value,
+                        "token_uri": "https://oauth2.googleapis.com/token"}
+                
+        return credentials
+
     except Exception as e:
         logging.error(e)
-        raise Exception(e)
-
+        raise Exception('Erro get_gcp_credentials:', e)
 
 def save_data(data,
               subject: str,
@@ -115,26 +89,6 @@ def save_data(data,
     try:
         if len(df) > 0:
             upload_file_to_directory_bulk(
-                file_system, file_path, file_name, df)
-            logging.info(f'{subject} processo concluido com sucesso.')
-
-        else:
-            logging.info(
-                f'{subject} processo nao possui dados para armazenar.')
-
-    except Exception as e:
-        logging.error(e)
-        raise Exception(f'Erro na função save_data{subject}: {str(e)}')
-    
-def save_data2(data,
-              subject: str,
-              file_system: str,
-              file_path: str,
-              file_name: str):
-    df = data
-    try:
-        if len(df) > 0:
-            upload_file_to_directory_bulk2(
                 file_system, file_path, file_name, df)
             logging.info(f'{subject} processo concluido com sucesso.')
 
@@ -253,28 +207,6 @@ def read_any(fs_name, file_path, file_name, _format,  mode='pandas', storage_acc
             func = format_map[_format]
         
         return func(BytesIO(file_bytes), **kwargs)
-
-#ler arquivos no datalake, mas utilizando a funcao initialize_storage_account_ad2, que permite utilizar storage alternativo
-def read_any_dev(fs_name, file_path, file_name, _format,  mode='pandas', storage_account = None, **kwargs):
-    try:
-        initialize_storage_account_ad_dev()
-        file_bytes = download_file_from_directory_dev(fs_name, file_path, file_name)
-   
-    except Exception as e:
-        raise Exception(f'falha ao ler arquivo {file_name} no storage alternativo: {e}')
-
-    else:
-        if mode == 'pandas':
-
-            format_map = {
-                "parquet": pd.read_parquet,
-                "csv": pd.read_csv,
-                "excel": pd.read_excel,
-            }
-
-            func = format_map[_format]
-        
-        return func(BytesIO(file_bytes), **kwargs)
     
 def read_parquet(fs_name, file_path, file_name, mode='pandas', **kwargs):
     return read_any(fs_name, file_path, file_name, 'parquet', mode=mode, engine = 'pyarrow', **kwargs)
@@ -286,3 +218,55 @@ def read_csv(fs_name, file_path, file_name, mode='pandas', **kwargs):
 
 def read_excel(fs_name, file_path, file_name, mode='pandas', **kwargs):
     return read_any(fs_name, file_path, file_name, 'excel', mode=mode, engine = 'openpyxl', **kwargs)
+
+def get_directories_v1(mock = False, arqJson = 'af_fontesinternas_jetoil_debitos.json', lane = 'DatasetTarget'):
+    if mock == False:
+        actual_dir = os.path.dirname(os.path.abspath(__file__))
+    else:
+        actual_dir = '/home'
+    try:
+        with open(os.path.join(actual_dir, arqJson)) as file:
+            data = json.load(file)
+            directories = data[lane]
+
+        return directories
+    except Exception as e:
+        logging.error(e)
+        raise FileNotFoundError('Erro get_directories_v1:', e)
+
+def delete_file(fs_name, file_path, file_name):
+    try:
+        initialize_storage_account_ad()
+        file_system_client = service_client.get_file_system_client(file_system=fs_name)
+        directory_client = file_system_client.get_directory_client(file_path)
+        file_client = directory_client.get_file_client(file_name)
+        file_client.delete_file()
+    
+    except Exception as e:
+        raise Exception(f"Erro ao deletar arquivo {file_path, file_name}. Erro: {e}")
+
+def upload_any(file, fs_name, uri, _format, storage_account = None, **kwargs):
+    initialize_storage_account_ad()
+    format_map = {"parquet": pd.DataFrame.to_parquet, "excel": pd.DataFrame.to_excel, "csv": pd.DataFrame.to_csv}
+    func = format_map[_format]
+    
+    try:
+        path, filename = os.path.split(uri)
+        file_system_client = service_client.get_file_system_client(file_system=fs_name)
+        directory_client = file_system_client.get_directory_client(path)
+        file_client = directory_client.get_file_client(filename)
+        
+        if _format == 'csv':
+            buffer = BytesIO(func(file, **kwargs).encode('utf-8'))     
+        elif _format == 'excel': #Condicional criada para o Excel para permitir upload do arquivo com varias abas
+            buffer = file
+        else:
+            buffer = BytesIO()
+            func(file, buffer, **kwargs)
+            
+        #file_client.upload_data(buffer.getvalue(), overwrite=True) #Comentado
+        file_client.upload_data(buffer, overwrite=True) #Incluso
+        
+    except Exception as e:
+        logging.error(e)
+        raise Exception('Erro ao salvar arquivo no datalake: ', e)

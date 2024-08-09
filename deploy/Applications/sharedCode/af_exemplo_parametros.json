@@ -1,7 +1,7 @@
 {
 	"processInformation": {
 		"application":"FunctionApp",
-		"resourceName":"nome_do_function_app",
+		"resourceName":"func-ipp-operacoes-lab",
 		"applicationName":"nome_da_function",
 		"processDescription":"Descrição do processo"
 	},
@@ -9,16 +9,16 @@
 		{
 			"Name": "exemplo_source_componente",
 			"FileSystem":"data",
-			"Directory": "",
-			"FileName": ""
+			"Directory": "raw/dados_internos/bi/dw/dm_componente",
+			"FileName": "rw_dm_componente.parquet"
 		}
 	],
 	"DatasetTarget": [
 		{
 			"Name": "exemplo_target_componente",
 			"FileSystem":"data",
-			"Directory": "",
-			"FileName": ""
+			"Directory": "raw/dados_internos/bi/dw/dm_componente",
+			"FileName": "rw_dm_componente.parquet"
 		}
 		
 		

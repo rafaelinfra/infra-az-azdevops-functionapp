@@ -1,0 +1,73 @@
+####### ------------- Trigger para iniciar o pipe ao modificar a main ---------------- #########
+
+trigger:
+ branches:
+   exclude:
+   - '*'
+
+resources:
+  repositories:
+  - repository: prj-ipp-sandbox-afa # In a different organization
+    # endpoint: '$(azureSubscription)'
+    type: git
+    name: prj-ipp-sandbox/prj-ipp-sandbox-afa
+    ref: refs/heads/dev
+    trigger:
+     branches:
+      include:
+      - dev
+
+####### ------------- Vm que irá rodar o processo ---------------- #########
+
+pool:
+  vmImage: ubuntu-latest
+
+
+####### ------------- Grupo de variáveis, indicação de ambiente ---------------- #########
+
+variables:
+- group: Ambiente de DEV
+
+####### ------------- Stage de testes, instalações de dependencias, criação de artefato e publicação ---------------- #########
+
+stages:
+- stage: Build
+  displayName: 'Build Python Function App'
+  jobs:
+  - job: Build
+    displayName: 'Build'
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - checkout: prj-ipp-sandbox-afa
+    - template: templates/use_python.yaml
+    - template: templates/run_unit_tests.yaml
+    - template: templates/unit_tests.yaml
+    - template: templates/install_dependencies.yaml
+    - template: templates/file_transform.yaml
+    - template: templates/archive_files.yaml
+    - template: templates/publish.yaml
+
+####### ------------- Configuração de IP para deploy, download do artefato e deploy ---------------- #########
+
+- stage: Deploy
+  displayName: 'Deploy Python Function App'
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - deployment: Deploy
+    displayName: 'Deploy'
+    environment: $(slotName)
+    pool:
+      vmImage: 'ubuntu-latest'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - template: templates/ipconfig.yaml
+            parameters:
+              ipconfig: "Enabled"
+          - template: templates/azure_function.yaml
+          - template: templates/ipconfig.yaml
+            parameters:
+              ipconfig: "Disabled"

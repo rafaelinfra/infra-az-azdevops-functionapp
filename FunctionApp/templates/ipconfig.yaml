@@ -1,0 +1,16 @@
+---
+parameters:
+ - name: ipconfig
+   type: string
+
+steps:
+- task: AzureCLI@2
+  displayName: 'Config IP'
+  inputs:
+    scriptType: bash
+    scriptLocation: inlineScript
+    azureSubscription: '$(azureSubscription)'
+    inlineScript: |
+      echo A configuração de acesso público será alterada para: ${{ parameters.ipconfig }}
+      az resource update --resource-group $(resourceGroupName) --name $(functionAppName) --resource-type 'Microsoft.Web/sites' --set properties.publicNetworkAccess=${{ parameters.ipconfig }}
+

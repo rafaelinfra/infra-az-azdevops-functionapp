@@ -1,0 +1,10 @@
+---
+steps:
+- task: FileTransform@1
+  displayName: 'File Transform'
+  inputs:
+    folderPath: Applications
+    fileType: json
+    targetFiles: |
+     host.json
+     local.settings.json

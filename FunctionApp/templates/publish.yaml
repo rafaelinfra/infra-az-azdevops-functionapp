@@ -1,0 +1,5 @@
+---
+steps:
+- publish: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+  displayName: 'Publish artifact'
+  artifact: $(artifact)

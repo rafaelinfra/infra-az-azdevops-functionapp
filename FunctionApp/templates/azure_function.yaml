@@ -1,0 +1,14 @@
+---
+steps:
+- task: AzureFunctionApp@2
+  displayName: 'Deploy Function App'
+  inputs:
+    connectedServiceNameARM: '$(azureSubscription)'
+    appType: $(appType)
+    appName: $(functionAppName)
+    deployToSlotOrASE: true
+    resourceGroupName: '$(resourceGroupName)'
+    slotName: '$(slotName)'
+    package: $(Pipeline.Workspace)/$(artifact)/$(Build.BuildId).zip
+    runtimeStack: 'PYTHON|$(pythonVersion)'
+    deploymentMethod: 'auto'
