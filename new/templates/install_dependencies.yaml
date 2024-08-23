@@ -1,0 +1,9 @@
+---
+steps:
+- script: |
+    python -m pip install --upgrade pip
+    pip install --upgrade pip
+    pip install pytest
+    pip install install-jdk
+    pip install -r $(System.DefaultWorkingDirectory)/Applications/requirements.txt
+  displayName: 'Install dependencies'

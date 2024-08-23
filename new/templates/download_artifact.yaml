@@ -1,0 +1,4 @@
+---
+steps:
+- download: current
+  artifact: $(artifact)

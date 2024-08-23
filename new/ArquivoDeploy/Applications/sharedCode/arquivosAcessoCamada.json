@@ -1,0 +1,14 @@
+[
+    {
+        "function": "af_fontesinternas_central_csc_tarefas_bonificacao",
+        "json": "sharedCode/af_fontesinternas_central_csc_tarefas_bonificacao.json"
+    },
+    {
+        "function": "af_fontesexternas_aai_consumidores_opt_in",
+        "json": "sharedCode/af_fontesexternas_aai_consumidores_opt_in.json"
+    },
+    {
+        "function": "af_fontesexternas_aai_resgate_cupons_promocao",
+        "json": "sharedCode/af_fontesexternas_aai_resgate_cupons_promocao.json"
+    }
+]
